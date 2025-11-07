@@ -4,11 +4,7 @@
 import { prisma } from '@/lib/prisma';
 import { saveDraftResponse, loadDraftResponse, submitFormResponse } from '@/app/dynamic-form/actions';
 import { fetchTemplateWithBindingsById } from '@/lib/technology/service';
-import {
-  buildSubmissionPayload,
-  createBindingLookup,
-  type BindingLookup,
-} from './fixtures/formSubmission';
+import { buildSubmissionPayload, createBindingLookup } from './fixtures/formSubmission';
 jest.mock('next/cache', () => ({
   revalidatePath: jest.fn(),
 }));
