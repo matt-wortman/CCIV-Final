@@ -1,0 +1,58 @@
+name: Evidence Collector
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_workflow:
+        description: 'Destination folder (e.g., ci, nightly)'
+        required: true
+        default: 'ci'
+      run_id:
+        description: 'GitHub Actions run ID to archive'
+        required: true
+      date:
+        description: 'Destination date folder (YYYY-MM-DD)'
+        required: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      EVIDENCE_DATE: ${{ inputs.date }}
+      TARGET_WORKFLOW: ${{ inputs.target_workflow }}
+      RUN_ID: ${{ inputs.run_id }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Collect evidence
+        id: collect
+        run: |
+          OUTPUT_ROOT="docs/evidence"
+          FOLDER_DATE="$EVIDENCE_DATE"
+          if [ -z "$FOLDER_DATE" ]; then
+            FOLDER_DATE="${GITHUB_RUN_ID}"
+          fi
+          OUTPUT_DIR="${OUTPUT_ROOT}/${FOLDER_DATE}/${TARGET_WORKFLOW}"
+          ARGS=("--workflow" "$TARGET_WORKFLOW" "--run" "$RUN_ID" "--output" "$OUTPUT_DIR")
+          if [ -n "$EVIDENCE_DATE" ]; then
+            ARGS+=("--date" "$EVIDENCE_DATE")
+          fi
+          npm run evidence:collect -- "${ARGS[@]}"
+          echo "output_dir=$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Upload evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-${{ inputs.target_workflow }}-${{ inputs.run_id }}
+          path: ${{ steps.collect.outputs.output_dir }}

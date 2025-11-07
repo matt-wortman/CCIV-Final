@@ -1,0 +1,92 @@
+name: CI - Build & Test
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+      - phase3-database-driven-form
+  push:
+    branches:
+      - master
+      - main
+      - phase3-database-driven-form
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.0'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type checking
+        run: npm run type-check
+
+      - name: Linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test:coverage
+
+      - name: Integration tests (Docker harness)
+        run: npm run test:integration
+
+      - name: Build application
+        run: npm run build
+
+      - name: Build Docker image (test)
+        run: |
+          docker build \
+            --build-arg NODE_VERSION=20.18.0 \
+            --target final \
+            -t tech-triage:ci-test .
+
+      - name: Check Docker image size
+        run: |
+          SIZE_BYTES=$(docker image inspect tech-triage:ci-test --format '{{.Size}}')
+          HUMAN=$(numfmt --to=iec --suffix=B "$SIZE_BYTES")
+          echo "Docker image size: $HUMAN"
+          if [ "$SIZE_BYTES" -gt 1073741824 ]; then
+            echo "::warning::Docker image exceeds 1GB (size=$HUMAN)"
+          fi
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: [
+                '✅ CI Checks Passed',
+                '',
+                '- Type checking: passed',
+                '- Linting: passed',
+                '- Tests: passed',
+                '- Build: successful'
+              ].join('\n')
+            })

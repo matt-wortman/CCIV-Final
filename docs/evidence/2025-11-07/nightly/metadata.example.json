@@ -1,0 +1,18 @@
+{
+  "workflowName": "Nightly Regression",
+  "runNumber": 87,
+  "runId": 0000000000,
+  "status": "completed",
+  "conclusion": "success",
+  "headSha": "<commit-sha>",
+  "headBranch": "master",
+  "scheduledStartAt": "2025-11-08T02:00:00Z",
+  "completedAt": "2025-11-08T02:37:12Z",
+  "dockerImageDigest": "sha256:<digest>",
+  "prismaMigrateHash": "20251030190113_add_question_revision_tracking",
+  "integrationFlags": {
+    "RUN_INTEGRATION_TESTS": true,
+    "RUN_PERFORMANCE_TESTS": true,
+    "RUN_VALIDATION_FAILURE_TESTS": true
+  }
+}
