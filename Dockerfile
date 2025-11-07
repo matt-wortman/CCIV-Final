@@ -37,6 +37,8 @@ RUN npm run build
 # =====================================
 FROM base AS prod-deps
 COPY package.json package-lock.json ./
+# Prisma generate runs during `npm ci`, so copy schema before installing deps.
+COPY prisma ./prisma
 RUN npm ci --omit=dev
 
 # =====================================
