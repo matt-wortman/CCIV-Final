@@ -18,6 +18,8 @@ EXPOSE 3000
 FROM base AS deps
 # Install dependencies separately to keep build caching efficient without BuildKit
 COPY package.json package-lock.json ./
+# Prisma generate runs in postinstall; schema must exist before `npm ci`.
+COPY prisma ./prisma
 RUN npm ci --include=dev
 
 # =====================================
